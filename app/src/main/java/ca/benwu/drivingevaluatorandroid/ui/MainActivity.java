@@ -25,6 +25,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 import ca.benwu.drivingevaluatorandroid.R;
+import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -43,8 +44,10 @@ public class MainActivity extends AppCompatActivity {
 
     private JSONArray dataPointsToSend = new JSONArray();
 
-    private int userId = 0;
-    private int tripId = 0;
+    private int userId = 1;
+    private int tripId = 1;
+
+    private boolean inTrip = false;
 
     private static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
@@ -64,9 +67,9 @@ public class MainActivity extends AppCompatActivity {
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        userId = preferences.getInt(PREF_TRIP_ID, 1);
+        tripId = preferences.getInt(PREF_TRIP_ID, 1);
 
-        BASE_URL = getResources().getString(R.string.base_url);
+        BASE_URL = "http://" + getResources().getString(R.string.api_url);
     }
 
     @Override
@@ -98,6 +101,24 @@ public class MainActivity extends AppCompatActivity {
     private VehicleMessage.Listener mListener = new VehicleMessage.Listener() {
         @Override
         public void receive(final VehicleMessage message) {
+            if(!((SimpleVehicleMessage) message).getName().equals("ignition_status")
+                    && !((SimpleVehicleMessage) message).getName().equals("accelerator_pedal_position")) {
+                return;
+            }
+            if(((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
+                if(((SimpleVehicleMessage) message).getValue().equals("start")) {
+                    inTrip = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textView.setText("In Trip");
+                        }
+                    });
+                }
+            }
+            if(!inTrip) {
+                return;
+            }
             //Log.i(TAG, message.toString());
             try {
                 JSONObject object = new JSONObject();
@@ -115,18 +136,13 @@ public class MainActivity extends AppCompatActivity {
             if(((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
                 if(((SimpleVehicleMessage) message).getValue().equals("off")) {
                     sendDataPoints();
+                    sendTripEnd();
+                    inTrip = false;
                     preferences.edit().putInt(PREF_TRIP_ID, ++tripId).commit();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             textView.setText("Trip Ended");
-                        }
-                    });
-                } else if(((SimpleVehicleMessage) message).getValue().equals("start")) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            textView.setText("In Trip");
                         }
                     });
                 }
@@ -135,15 +151,27 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private void sendTripEnd() {
+        try {
+            JSONObject tripInfo = new JSONObject();
+            tripInfo.put("userId", userId);
+            tripInfo.put("tripId", tripId);
+            String response = post(BASE_URL + ":" + PORT + "/trip/end", tripInfo.toString());
+            Log.i(TAG, "Trip end sent: " + response);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void sendDataPoints() {
         try {
             JSONObject dataSet = new JSONObject();
             dataSet.put("userId", userId);
             dataSet.put("tripId", tripId);
-            dataSet.put("data", dataPointsToSend.toString());
-            post("http://" + BASE_URL + ":" + PORT, dataSet.toString());
+            dataSet.put("data", dataPointsToSend);
+            String response = post(BASE_URL + ":" + PORT + "/trip/data", dataSet.toString());
             dataPointsToSend = new JSONArray();
-            Log.i(TAG, "Data points sent");
+            Log.i(TAG, "Data points sent: " + response);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -167,10 +195,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "Unable to add network vehicle interface");
             }
 
-            // We want to receive updates whenever the EngineSpeed changes. We
-            // have an EngineSpeed.Listener (see above, mSpeedListener) and here
-            // we request that the VehicleManager call its receive() method
-            // whenever the EngineSpeed changes
             mVehicleManager.addListener(SimpleVehicleMessage.class, mListener);
         }
 
