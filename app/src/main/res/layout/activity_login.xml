@@ -24,24 +24,16 @@
         <ca.benwu.drivingevaluatorandroid.utils.LightFontTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="40sp"
+            android:textSize="48sp"
             android:text="Drive"/>
 
         <ca.benwu.drivingevaluatorandroid.utils.MediumFontTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="40sp"
+            android:textSize="48sp"
             android:text="Mom"/>
 
     </LinearLayout>
-
-    <ProgressBar
-        android:id="@+id/login_progress"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:visibility="gone" />
 
     <LinearLayout
         android:elevation="12dp"
@@ -61,10 +53,10 @@
             android:layout_height="wrap_content">
 
             <AutoCompleteTextView
-                android:id="@+id/email"
+                android:id="@+id/username"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/prompt_email"
+                android:hint="Username"
                 android:inputType="textEmailAddress"
                 android:maxLines="1"
                 android:singleLine="true" />
@@ -90,7 +82,8 @@
         </android.support.design.widget.TextInputLayout>
 
         <android.support.design.widget.TextInputLayout
-            android:visibility="gone"
+            android:id="@+id/confirmPasswordContainer"
+            android:visibility="invisible"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
@@ -104,6 +97,7 @@
                 android:imeOptions="actionUnspecified"
                 android:inputType="textPassword"
                 android:maxLines="1"
+                android:scaleY="0"
                 android:singleLine="true" />
 
         </android.support.design.widget.TextInputLayout>
@@ -128,4 +122,12 @@
             android:textStyle="bold" />
 
     </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/login_progress"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
 </RelativeLayout>

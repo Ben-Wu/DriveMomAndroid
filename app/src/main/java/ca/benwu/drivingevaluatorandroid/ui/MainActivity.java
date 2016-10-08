@@ -25,7 +25,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 import ca.benwu.drivingevaluatorandroid.R;
-import okhttp3.FormBody;
+import ca.benwu.drivingevaluatorandroid.utils.NetworkHelper;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
             JSONObject tripInfo = new JSONObject();
             tripInfo.put("userId", userId);
             tripInfo.put("tripId", tripId);
-            String response = post(BASE_URL + ":" + PORT + "/trip/end", tripInfo.toString());
+            String response = NetworkHelper.post("/trip/end", tripInfo.toString());
             Log.i(TAG, "Trip end sent: " + response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             dataSet.put("userId", userId);
             dataSet.put("tripId", tripId);
             dataSet.put("data", dataPointsToSend);
-            String response = post(BASE_URL + ":" + PORT + "/trip/data", dataSet.toString());
+            String response = NetworkHelper.post("/trip/data", dataSet.toString());
             dataPointsToSend = new JSONArray();
             Log.i(TAG, "Data points sent: " + response);
         } catch (Exception e) {
