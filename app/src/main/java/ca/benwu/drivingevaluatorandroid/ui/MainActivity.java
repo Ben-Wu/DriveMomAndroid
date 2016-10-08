@@ -4,17 +4,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
 import android.widget.TextView;
 
 import com.openxc.VehicleManager;
 import com.openxc.interfaces.network.NetworkVehicleInterface;
-import com.openxc.measurements.EngineSpeed;
-import com.openxc.measurements.Measurement;
 import com.openxc.messages.SimpleVehicleMessage;
 import com.openxc.messages.VehicleMessage;
 import com.openxc.remote.VehicleServiceException;
@@ -23,16 +22,37 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+
 import ca.benwu.drivingevaluatorandroid.R;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    private String BASE_URL;
+    private final int PORT = 3000;
+
     private VehicleManager mVehicleManager;
-    private TextView mEngineSpeedView;
+    private TextView textView;
 
     private JSONArray dataPointsToSend = new JSONArray();
+
+    private int userId = 0;
+    private int tripId = 0;
+
+    private static final MediaType JSON
+            = MediaType.parse("application/json; charset=utf-8");
+
+    private OkHttpClient client = new OkHttpClient();
+
+    private final String PREF_TRIP_ID = "pref_trip_id";
+    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +60,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         // grab a reference to the engine speed text object in the UI, so we can
         // manipulate its value later from Java code
-        mEngineSpeedView = (TextView) findViewById(R.id.engine_speed);
+        textView = (TextView) findViewById(R.id.text);
+
+        preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        userId = preferences.getInt(PREF_TRIP_ID, 1);
+
+        BASE_URL = getResources().getString(R.string.base_url);
     }
 
     @Override
@@ -52,8 +78,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG, "Unbinding from Vehicle Manager");
             // Remember to remove your listeners, in typical Android
             // fashion.
-            mVehicleManager.removeListener(EngineSpeed.class,
-                    mSpeedListener);
+            mVehicleManager.removeListener(SimpleVehicleMessage.class, mListener);
             unbindService(mConnection);
             mVehicleManager = null;
         }
@@ -70,18 +95,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private EngineSpeed.Listener mSpeedListener = new EngineSpeed.Listener() {
-        @Override
-        public void receive(Measurement measurement) {
-            final EngineSpeed speed = (EngineSpeed) measurement;
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    mEngineSpeedView.setText("Engine speed (RPM): " + speed.getValue().doubleValue());
-                }
-            });
-        }
-    };
-
     private VehicleMessage.Listener mListener = new VehicleMessage.Listener() {
         @Override
         public void receive(final VehicleMessage message) {
@@ -96,10 +109,45 @@ public class MainActivity extends AppCompatActivity {
 
             }
             if(dataPointsToSend.length() > 200) {
-
+                sendDataPoints();
             }
+
+            if(((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
+                if(((SimpleVehicleMessage) message).getValue().equals("off")) {
+                    sendDataPoints();
+                    preferences.edit().putInt(PREF_TRIP_ID, ++tripId).commit();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textView.setText("Trip Ended");
+                        }
+                    });
+                } else if(((SimpleVehicleMessage) message).getValue().equals("start")) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textView.setText("In Trip");
+                        }
+                    });
+                }
+            }
+
         }
     };
+
+    private void sendDataPoints() {
+        try {
+            JSONObject dataSet = new JSONObject();
+            dataSet.put("userId", userId);
+            dataSet.put("tripId", tripId);
+            dataSet.put("data", dataPointsToSend.toString());
+            post("http://" + BASE_URL + ":" + PORT, dataSet.toString());
+            dataPointsToSend = new JSONArray();
+            Log.i(TAG, "Data points sent");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private ServiceConnection mConnection = new ServiceConnection() {
         // Called when the connection with the VehicleManager service is
@@ -114,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
                     .getService();
 
             try {
-                mVehicleManager.setVehicleInterface(NetworkVehicleInterface.class, "23.92.16.201:50001");
+                mVehicleManager.setVehicleInterface(NetworkVehicleInterface.class, BASE_URL + ":50001");
             } catch (VehicleServiceException e) {
                 Log.e(TAG, "Unable to add network vehicle interface");
             }
@@ -132,4 +180,14 @@ public class MainActivity extends AppCompatActivity {
             mVehicleManager = null;
         }
     };
+
+    private String post(String url, String json) throws IOException {
+        RequestBody body = RequestBody.create(JSON, json);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        Response response = client.newCall(request).execute();
+        return response.body().string();
+    }
 }
