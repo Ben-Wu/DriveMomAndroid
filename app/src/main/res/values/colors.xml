@@ -6,5 +6,7 @@
 
     <color name="white">#efefef</color>
 
+    <color name="transparent" >#00000000</color>
+
     <color name="almostWhite">#8feeeeee</color>
 </resources>

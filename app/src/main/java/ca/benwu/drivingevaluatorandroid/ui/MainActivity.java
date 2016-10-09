@@ -7,10 +7,13 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 
 import com.openxc.VehicleManager;
 import com.openxc.interfaces.network.NetworkVehicleInterface;
@@ -24,6 +27,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import ca.benwu.drivingevaluatorandroid.R;
 import ca.benwu.drivingevaluatorandroid.utils.NetworkHelper;
 import okhttp3.MediaType;
@@ -57,10 +62,19 @@ public class MainActivity extends AppCompatActivity {
     private final String PREF_TRIP_ID = "pref_trip_id";
     private SharedPreferences preferences;
 
+    @BindView(R.id.inTripBackground)
+    ViewFlipper inTripBackground;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        ButterKnife.bind(this);
+
+        inTripBackground.setFlipInterval(2000);
+        inTripBackground.startFlipping();
+
         // grab a reference to the engine speed text object in the UI, so we can
         // manipulate its value later from Java code
         textView = (TextView) findViewById(R.id.text);
@@ -96,6 +110,20 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, VehicleManager.class);
             bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+                preferences.edit().clear().commit();
+                Intent intent = new Intent(this, LoginActivity.class);
+                startActivity(intent);
+                finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private VehicleMessage.Listener mListener = new VehicleMessage.Listener() {

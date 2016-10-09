@@ -1,8 +1,10 @@
 package ca.benwu.drivingevaluatorandroid.ui;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Patterns;
@@ -29,6 +31,10 @@ public class LoginActivity extends AppCompatActivity {
 
     public static final String EXTRA_USER_ID = "extra.user.id";
 
+    public static final String PREF_USER_ID = "pref.uzer.id";
+    public static final String PREF_MOM_TYPE = "pref.mom.type";
+    public static final String PREF_USER_NAME = "pref.user.name";
+
     @BindView(R.id.login_progress)
     ProgressBar loadingCircle;
 
@@ -47,12 +53,21 @@ public class LoginActivity extends AppCompatActivity {
 
     private boolean isLogin = true;
 
+    private SharedPreferences preferences;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
         ButterKnife.bind(this);
+
+        preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        int userId = preferences.getInt(PREF_USER_ID, -1);
+        if(userId != -1) {
+            enterMainActivity(userId);
+        }
     }
 
     @OnClick(R.id.loginButton)
@@ -178,9 +193,15 @@ public class LoginActivity extends AppCompatActivity {
 
     private void enterMainActivity(int userId) {
         Toast.makeText(this, "Logged In!", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra(EXTRA_USER_ID, userId);
+        Intent intent;
+        if(preferences.getString(PREF_USER_NAME, null) == null) {
+            intent = new Intent(this, WelcomeActivity.class);
+        } else {
+            intent = new Intent(this, MainActivity.class);
+        }
+        preferences.edit().putInt(PREF_USER_ID, userId).commit();
         startActivity(intent);
         finish();
+        overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
     }
 }
