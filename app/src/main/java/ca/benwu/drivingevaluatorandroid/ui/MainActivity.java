@@ -12,6 +12,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
@@ -45,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private final int PORT = 3000;
 
     private VehicleManager mVehicleManager;
-    private TextView textView;
 
     private JSONArray dataPointsToSend = new JSONArray();
 
@@ -64,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.inTripBackground)
     ViewFlipper inTripBackground;
+    @BindView(R.id.inTripText)
+    TextView inTripText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,11 +75,6 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
 
         inTripBackground.setFlipInterval(2000);
-        inTripBackground.startFlipping();
-
-        // grab a reference to the engine speed text object in the UI, so we can
-        // manipulate its value later from Java code
-        textView = (TextView) findViewById(R.id.text);
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -130,16 +127,17 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void receive(final VehicleMessage message) {
             if(!((SimpleVehicleMessage) message).getName().equals("ignition_status")
-                    && !((SimpleVehicleMessage) message).getName().equals("accelerator_pedal_position")) {
+                    && !((SimpleVehicleMessage) message).getName().equals("accelerator_pedal_position")
+                    && !((SimpleVehicleMessage) message).getName().equals("vehicle_speed")
+                    && !((SimpleVehicleMessage) message).getName().equals("steering_wheel_angle")) {
                 return;
             }
             if(((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
                 if(((SimpleVehicleMessage) message).getValue().equals("start")) {
-                    inTrip = true;
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            textView.setText("In Trip");
+                            startTrip();
                         }
                     });
                 }
@@ -157,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (JSONException e) {
 
             }
-            if(dataPointsToSend.length() > 200) {
+            if(dataPointsToSend.length() > 100) {
                 sendDataPoints();
             }
 
@@ -167,17 +165,18 @@ public class MainActivity extends AppCompatActivity {
                     sendTripEnd();
                     inTrip = false;
                     preferences.edit().putInt(PREF_TRIP_ID, ++tripId).commit();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            textView.setText("Trip Ended");
-                        }
-                    });
                 }
             }
 
         }
     };
+
+    private void startTrip() {
+        inTrip = true;
+        inTripBackground.startFlipping();
+        inTripText.setVisibility(View.VISIBLE);
+        inTripBackground.setVisibility(View.VISIBLE);
+    }
 
     private void sendTripEnd() {
         try {
