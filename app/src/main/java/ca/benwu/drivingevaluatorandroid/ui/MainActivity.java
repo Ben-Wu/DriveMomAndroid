@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NavUtils;
@@ -13,6 +14,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
@@ -30,6 +32,7 @@ import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import ca.benwu.drivingevaluatorandroid.R;
 import ca.benwu.drivingevaluatorandroid.utils.NetworkHelper;
 import okhttp3.MediaType;
@@ -88,6 +91,8 @@ public class MainActivity extends AppCompatActivity {
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
+        userId = preferences.getInt(LoginActivity.PREF_USER_ID, 1);
+
         tripId = preferences.getInt(PREF_TRIP_ID, 1);
 
         BASE_URL = "http://" + getResources().getString(R.string.api_url);
@@ -98,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         // When the activity goes into the background or exits, we want to make
         // sure to unbind from the service to avoid leaking memory
-        if(mVehicleManager != null) {
+        if (mVehicleManager != null) {
             Log.i(TAG, "Unbinding from Vehicle Manager");
             // Remember to remove your listeners, in typical Android
             // fashion.
@@ -113,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         // When the activity starts up or returns from the background,
         // re-connect to the VehicleManager so we can receive updates.
-        if(mVehicleManager == null) {
+        if (mVehicleManager == null) {
             Intent intent = new Intent(this, VehicleManager.class);
             bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         }
@@ -133,17 +138,41 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @OnClick(R.id.viewHistory)
+    public void openHistory(View view) {
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... params) {
+                try {
+                    return NetworkHelper.get("/trip");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(String s) {
+                if (s != null) {
+                    Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
+                    intent.putExtra("HISTORY_RESPONSE", s);
+                    startActivity(intent);
+                }
+            }
+        }.execute();
+    }
+
     private VehicleMessage.Listener mListener = new VehicleMessage.Listener() {
         @Override
         public void receive(final VehicleMessage message) {
-            if(!((SimpleVehicleMessage) message).getName().equals("ignition_status")
+            if (!((SimpleVehicleMessage) message).getName().equals("ignition_status")
                     && !((SimpleVehicleMessage) message).getName().equals("accelerator_pedal_position")
                     && !((SimpleVehicleMessage) message).getName().equals("vehicle_speed")
                     && !((SimpleVehicleMessage) message).getName().equals("steering_wheel_angle")) {
                 return;
             }
-            if(((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
-                if(((SimpleVehicleMessage) message).getValue().equals("start")) {
+            if (((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
+                if (((SimpleVehicleMessage) message).getValue().equals("start")) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -152,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
             }
-            if(!inTrip) {
+            if (!inTrip) {
                 return;
             }
             //Log.i(TAG, message.toString());
@@ -165,12 +194,12 @@ public class MainActivity extends AppCompatActivity {
             } catch (JSONException e) {
 
             }
-            if(dataPointsToSend.length() > 100) {
+            if (dataPointsToSend.length() > 100) {
                 sendDataPoints();
             }
 
-            if(((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
-                if(((SimpleVehicleMessage) message).getValue().equals("off")) {
+            if (((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
+                if (((SimpleVehicleMessage) message).getValue().equals("off")) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -216,11 +245,14 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    durationText.setText(Integer.parseInt(responseJson.optString("duration", "0"))/1000 + " seconds");
+                    int score = (int) Double.parseDouble(responseJson.optString("score", "0"));
+                    ((ImageView) findViewById(R.id.mainMom)).setImageDrawable(getResources().getDrawable(getMom(score, preferences.getInt(LoginActivity.PREF_MOM_TYPE, 0))));
+                    findViewById(R.id.mainMom).setVisibility(View.VISIBLE);
+                    durationText.setText(Integer.parseInt(responseJson.optString("duration", "0")) / 1000 + " seconds");
                     hardAccsText.setText(responseJson.optString("hardAccs", "0"));
                     hardBrakingText.setText(responseJson.optString("hardBrakes", "0"));
                     sharpTurnText.setText(responseJson.optString("sharpTurns", "0"));
-                    scoreText.setText(String.valueOf((int) Double.parseDouble(responseJson.optString("score", "0"))));
+                    scoreText.setText(String.valueOf(score));
                 }
             });
         } catch (Exception e) {
@@ -278,5 +310,40 @@ public class MainActivity extends AppCompatActivity {
                 .build();
         Response response = client.newCall(request).execute();
         return response.body().string();
+    }
+
+    private int getMom(int score, int momType) {
+        if (score > 50) {
+            switch (momType) {
+                case 0:
+                    return R.drawable.mom_happy_1;
+                case 1:
+                    return R.drawable.mom_happy_2;
+                case 2:
+                    return R.drawable.mom_happy_3;
+                case 3:
+                    return R.drawable.mom_happy_4;
+                case 4:
+                    return R.drawable.mom_happy_5;
+                case 5:
+                    return R.drawable.mom_happy_6;
+            }
+        } else {
+            switch (momType) {
+                case 0:
+                    return R.drawable.mom_very_sad_1;
+                case 1:
+                    return R.drawable.mom_very_sad_2;
+                case 2:
+                    return R.drawable.mom_very_sad_3;
+                case 3:
+                    return R.drawable.mom_very_sad_4;
+                case 4:
+                    return R.drawable.mom_very_sad_5;
+                case 5:
+                    return R.drawable.mom_very_sad_6;
+            }
+        }
+        return 0;
     }
 }

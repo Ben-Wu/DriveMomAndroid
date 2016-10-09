@@ -111,14 +111,26 @@
         </LinearLayout>
 
         <Button
+            android:id="@+id/viewHistory"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:paddingTop="16dp"
-            android:text="View History"/>
+            android:text="View History"
+            android:onClick="openHistory"/>
 
     </LinearLayout>
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/mom_happy_1"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="20dp"
+        android:visibility="invisible"
+        android:id="@+id/mainMom"/>
 
     <ViewFlipper
         android:visibility="invisible"

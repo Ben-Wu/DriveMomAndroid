@@ -45,4 +45,14 @@ public class NetworkHelper {
         return response.body().string();
     }
 
+    public static String get(String endpoint) throws IOException {
+        Log.d(TAG, "GET: " + endpoint);
+        Request request = new Request.Builder()
+                .url(BASE_URL + ":" + PORT + endpoint)
+                .get()
+                .build();
+        Response response = getInstance().newCall(request).execute();
+        return response.body().string();
+    }
+
 }

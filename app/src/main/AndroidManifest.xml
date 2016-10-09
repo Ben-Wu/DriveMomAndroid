@@ -26,10 +26,9 @@
         </activity>
         <activity
             android:name=".ui.LoginActivity"
-            android:theme="@style/AppThemeNoActionBar">
-
-        </activity>
-        <activity android:name=".ui.WelcomeActivity"></activity>
+            android:theme="@style/AppThemeNoActionBar"></activity>
+        <activity android:name=".ui.WelcomeActivity" />
+        <activity android:name=".ui.HistoryActivity"></activity>
     </application>
 
 </manifest>
