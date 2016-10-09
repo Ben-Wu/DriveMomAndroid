@@ -66,6 +66,16 @@ public class MainActivity extends AppCompatActivity {
     ViewFlipper inTripBackground;
     @BindView(R.id.inTripText)
     TextView inTripText;
+    @BindView(R.id.durationValue)
+    TextView durationText;
+    @BindView(R.id.hardAccsValue)
+    TextView hardAccsText;
+    @BindView(R.id.hardBrakingValue)
+    TextView hardBrakingText;
+    @BindView(R.id.sharpTurnValue)
+    TextView sharpTurnText;
+    @BindView(R.id.scoreValue)
+    TextView scoreText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -161,9 +171,14 @@ public class MainActivity extends AppCompatActivity {
 
             if(((SimpleVehicleMessage) message).getName().equals("ignition_status")) {
                 if(((SimpleVehicleMessage) message).getValue().equals("off")) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            endTrip();
+                        }
+                    });
                     sendDataPoints();
                     sendTripEnd();
-                    inTrip = false;
                     preferences.edit().putInt(PREF_TRIP_ID, ++tripId).commit();
                 }
             }
@@ -178,6 +193,18 @@ public class MainActivity extends AppCompatActivity {
         inTripBackground.setVisibility(View.VISIBLE);
     }
 
+    private void endTrip() {
+        inTripBackground.stopFlipping();
+        inTripText.setVisibility(View.INVISIBLE);
+        inTripBackground.setVisibility(View.INVISIBLE);
+        durationText.setText("Loading...");
+        hardAccsText.setText("Loading...");
+        hardBrakingText.setText("Loading...");
+        sharpTurnText.setText("Loading...");
+        scoreText.setText("Loading...");
+        inTrip = false;
+    }
+
     private void sendTripEnd() {
         try {
             JSONObject tripInfo = new JSONObject();
@@ -185,6 +212,17 @@ public class MainActivity extends AppCompatActivity {
             tripInfo.put("tripId", tripId);
             String response = NetworkHelper.post("/trip/end", tripInfo.toString());
             Log.i(TAG, "Trip end sent: " + response);
+            final JSONObject responseJson = new JSONObject(response);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    durationText.setText(Integer.parseInt(responseJson.optString("duration", "0"))/1000 + " seconds");
+                    hardAccsText.setText(responseJson.optString("hardAccs", "0"));
+                    hardBrakingText.setText(responseJson.optString("hardBrakes", "0"));
+                    sharpTurnText.setText(responseJson.optString("sharpTurns", "0"));
+                    scoreText.setText(String.valueOf((int) Double.parseDouble(responseJson.optString("score", "0"))));
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
         }

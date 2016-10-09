@@ -61,6 +61,12 @@
                     android:paddingTop="6dp"
                     android:text="Sharp turning: "/>
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="6dp"
+                    android:text="Score: "/>
+
             </LinearLayout>
 
             <LinearLayout
@@ -88,6 +94,13 @@
 
                 <TextView
                     android:id="@+id/sharpTurnValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="6dp"
+                    android:text=""/>
+
+                <TextView
+                    android:id="@+id/scoreValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingTop="6dp"
