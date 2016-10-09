@@ -24,7 +24,7 @@ public class NetworkHelper {
     private static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
 
-    private static final String BASE_URL = "http://10.0.2.2";
+    private static final String BASE_URL = "http://23.92.16.201";
     private static final int PORT = 3000;
 
     private static OkHttpClient getInstance() {

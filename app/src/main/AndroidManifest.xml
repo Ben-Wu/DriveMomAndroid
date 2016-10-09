@@ -18,15 +18,16 @@
         <activity
             android:name=".ui.MainActivity"
             android:parentActivityName=".ui.LoginActivity">
+        </activity>
+        <activity
+            android:name=".ui.LoginActivity"
+            android:theme="@style/AppThemeNoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ui.LoginActivity"
-            android:theme="@style/AppThemeNoActionBar"></activity>
         <activity android:name=".ui.WelcomeActivity" />
         <activity android:name=".ui.HistoryActivity"></activity>
     </application>

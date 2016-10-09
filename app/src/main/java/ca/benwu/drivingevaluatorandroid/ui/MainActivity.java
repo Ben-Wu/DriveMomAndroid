@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to the action bar's Up/Home button
             case android.R.id.home:
-                preferences.edit().clear().commit();
+                preferences.edit().putInt(LoginActivity.PREF_USER_ID, -1).commit();
                 Intent intent = new Intent(this, LoginActivity.class);
                 startActivity(intent);
                 finish();
