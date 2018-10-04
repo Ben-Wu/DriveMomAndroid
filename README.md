@@ -4,7 +4,7 @@ DriveMom is a an app that uses the openxc OBD device to collect data on the driv
 
 Uses: https://github.com/Ben-Wu/DriveMomBackend
 
-##Screenshots
+## Screenshots
 
 <img src="https://github.com/Ben-Wu/DriveMomAndroid/blob/master/screenshot_login.png" width="300"/>
 <img src="https://github.com/Ben-Wu/DriveMomAndroid/blob/master/screenshot_summary.png" width="300"/>
